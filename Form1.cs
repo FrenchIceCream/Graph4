@@ -22,7 +22,9 @@ namespace Graph4
         private State state;
         private Pen _pen;
         private Pen _penRed;
+        private Pen _penGreen;
         private readonly float _searchDistance = 10;
+        private int _selectedDot = -1;
 
         public Form1()
         {
@@ -33,6 +35,7 @@ namespace Graph4
 
             _pen = new Pen(Color.Black, 1);
             _penRed = new Pen(Color.Red, 1);
+            _penGreen = new Pen(Color.Green, 2);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -271,6 +274,27 @@ namespace Graph4
 
                 }
             }
+            if (state == State.Task3Moving)
+            {
+                if (_selectedDot == -1)
+                {
+                    int pos = FindPoint(p);
+                    if (pos != -1)
+                    {
+                        _selectedDot = pos;
+                        g.DrawRectangle(_penGreen, points[pos].X, points[pos].Y, 1, 1);
+
+                    }
+                }
+                else
+                {
+                    points[_selectedDot] = p;
+                    UpdateMatrixWithDOt(_selectedDot);
+                    _selectedDot = -1;
+                    g.Clear(Color.White);
+                    DrawPoints();
+                }
+            }
         }
 
         private void RecalculateAllMatrix()
@@ -402,6 +426,140 @@ namespace Graph4
             }
         }
 
+        private void UpdateMatrixWithDOt(int ind)
+        {
+            if (points.Count <= 4)
+            {
+                if (points.Count == 1)
+                {
+                    realPoints[0] = realPoints[1] = realPoints[2] = realPoints[3] = points[ind];
+                }
+                if (points.Count == 2)
+                {
+                    if (ind == 0)
+                    {
+                        realPoints[0] = realPoints[1] = points[ind];
+                    }
+                    else
+                    {
+                        realPoints[2] = realPoints[3] = points[ind];
+                    }
+                }
+                if (points.Count == 3)
+                {
+                    if (ind == 0)
+                    {
+                        realPoints[0] = points[ind];
+
+                    }
+                    else
+                    {
+                        if (ind == 1)
+                        {
+                            realPoints[1] = points[ind];
+                        }
+                        else
+                        {
+                            realPoints[3] = points[ind];
+                        }
+                        realPoints[2] = new PointF((realPoints[1].X + realPoints[3].X) / 2, (realPoints[1].Y + realPoints[3].Y) / 2);
+                    }
+                }
+                else
+                {
+                    realPoints[ind] = points[ind];
+                }
+
+                MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[0].X, realPoints[1].X, realPoints[2].X, realPoints[3].X,
+                realPoints[0].Y, realPoints[1].Y, realPoints[2].Y, realPoints[3].Y,});
+                matrixs[0] = t1 * BezBukviKoef;
+            }
+            else
+            {
+                if (ind <= 1)
+                {
+                    realPoints[ind] = points[ind];
+
+                    MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[0].X, realPoints[1].X, realPoints[2].X, realPoints[3].X,
+                realPoints[0].Y, realPoints[1].Y, realPoints[2].Y, realPoints[3].Y,});
+                    matrixs[0] = t1 * BezBukviKoef;
+                }
+                else if (ind >= points.Count - 2)
+                {
+                    if (points.Count % 2 == 0)
+                    {
+                        int i = realPoints.Count - 4;
+                        realPoints[realPoints.Count - (points.Count - ind)] = points[ind];
+                        MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                        matrixs[matrixs.Count - 1] = t1 * BezBukviKoef;
+                    }
+                    else
+                    {
+                        if (points.Count - 1 == ind)
+                        {
+                            realPoints[realPoints.Count - 1] = points[ind];
+                            int i = realPoints.Count - 4;
+                            MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                            matrixs[matrixs.Count - 1] = t1 * BezBukviKoef;
+                        }
+                        else
+                        {
+                            int j = points.Count - 2;
+                            realPoints[realPoints.Count - 3] = points[ind];
+                            realPoints[realPoints.Count - 2] = new PointF((points[j].X + points[j + 1].X) / 2, (points[j].Y + points[j + 1].Y) / 2);
+                            j = points.Count - 3;
+                            realPoints[realPoints.Count - 4] = new PointF((points[j].X + points[j + 1].X) / 2, (points[j].Y + points[j + 1].Y) / 2);
+
+                            int i = realPoints.Count - 4;
+                            MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                            matrixs[matrixs.Count - 1] = t1 * BezBukviKoef;
+
+                            i = realPoints.Count - 7;
+                            t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                            matrixs[matrixs.Count - 2] = t1 * BezBukviKoef;
+                        }
+                    }
+                }
+                else
+                {
+
+                    int matrNumber = (ind / 2 - 1 + ind % 2);
+                    int secondMatrNumber = 0;
+                    int updateInd = matrNumber * 3;
+
+                    if (ind % 2 == 0)// матрица текущая и та что справа должны быть обновлены
+                    {
+                        updateInd += 2;
+                        realPoints[updateInd] = points[ind];
+                        realPoints[updateInd + 1] = new PointF((points[ind].X + points[ind + 1].X) / 2, (points[ind].Y + points[ind + 1].Y) / 2);
+                        secondMatrNumber = matrNumber + 1;
+                    }
+                    else // матрица текущая и та что слева должны быть обновлены
+                    {
+                        updateInd += 1;
+                        realPoints[updateInd] = points[ind];
+                        realPoints[updateInd - 1] = new PointF((points[ind].X + points[ind - 1].X) / 2, (points[ind].Y + points[ind - 1].Y) / 2);
+                        secondMatrNumber = matrNumber - 1;
+                    }
+
+                    int i = secondMatrNumber * 3;
+                    MyMatrix t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                    matrixs[secondMatrNumber] = t1 * BezBukviKoef;
+
+                    i = matrNumber * 3;
+                    t1 = new MyMatrix(2, 4, new List<float>() { realPoints[i].X, realPoints[i+1].X, realPoints[i+2].X, realPoints[i+3].X,
+                        realPoints[i].Y, realPoints[i+1].Y, realPoints[i+2].Y, realPoints[i+3].Y});
+                    matrixs[matrNumber] = t1 * BezBukviKoef;
+
+                }
+            }
+        }
+
         private void button4_Click(object sender, EventArgs e)
         {
             state = State.Task3Line;
@@ -415,9 +573,17 @@ namespace Graph4
             g.Clear(Color.White);
             DrawPoints();
         }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            state = State.Task3Moving;
+            _selectedDot = -1;
+            g.Clear(Color.White);
+            DrawPoints();
+        }
     }
 
-    enum State { NoTask, Task1, Task2, Task3Drawing, Task3Line, Task3Delete }
+    enum State { NoTask, Task1, Task2, Task3Drawing, Task3Line, Task3Delete, Task3Moving }
 
     class MyMatrix
     {
