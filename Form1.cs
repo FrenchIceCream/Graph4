@@ -22,6 +22,7 @@ namespace Graph4
         private State state;
         private Pen _pen;
         private Pen _penRed;
+        private readonly float _searchDistance = 10;
 
         public Form1()
         {
@@ -155,7 +156,6 @@ namespace Graph4
 
             if (points.Count <= 4)
             {
-                realPoints.Add(point);
                 if (matrixs.Count == 0)
                 {
                     matrixs.Add(new MyMatrix(2, 4));
@@ -164,21 +164,33 @@ namespace Graph4
                 switch (points.Count)
                 {
                     case 1:
+                        realPoints.Add(point);
+                        realPoints.Add(point);
+                        realPoints.Add(point);
+                        realPoints.Add(point);
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[0].X, points[0].X, points[0].X,
                             points[0].Y, points[0].Y, points[0].Y, points[0].Y });
                         NotFinishedDots = 3;
                         break;
                     case 2:
+                        realPoints[2] = (point);
+                        realPoints[3] = (point);
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[0].X, points[1].X, points[1].X,
                             points[0].Y, points[0].Y, points[1].Y, points[1].Y });
                         NotFinishedDots = 2;
                         break;
                     case 3:
-                        P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, points[1].X+(points[2].X -points[1].X)/2, points[2].X,
-                            points[0].Y, points[1].Y, points[1].Y+(points[2].Y -points[1].Y)/2, points[2].Y });
+                        realPoints[1] = points[2];
+                        realPoints[3] = (point);
+                        realPoints[2] = new PointF((points[2].X + points[1].X) / 2, (points[2].Y + points[1].Y) / 2);
+                        P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, realPoints[realPoints.Count-2].X, points[2].X,
+                            points[0].Y, points[1].Y, realPoints[realPoints.Count-2].Y, points[2].Y });
                         NotFinishedDots = 1;
                         break;
                     default:
+
+                        realPoints[realPoints.Count - 2] = realPoints[realPoints.Count - 1];
+                        realPoints[realPoints.Count - 1] = point;
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, points[2].X, points[3].X,
                             points[0].Y, points[1].Y, points[2].Y, points[3].Y });
                         NotFinishedDots = 0;
@@ -203,7 +215,7 @@ namespace Graph4
                         //добавляем еще одну фейковую точку
                         realPoints.Add(new PointF((realPoints[realPoints.Count - 2].X + realPoints[realPoints.Count - 1].X) / 2, (realPoints[realPoints.Count - 2].Y + realPoints[realPoints.Count - 1].Y) / 2));
                         realPoints.Add(point); // добавили новую матрицу и точки для нее
-                        points.Add(point);
+                        //points.Add(point);
 
                         MyMatrix temp = new MyMatrix(2, 4, new List<float>()
                         { realPoints[realPoints.Count - 4].X, realPoints[realPoints.Count - 3].X, realPoints[realPoints.Count - 2].X, realPoints[realPoints.Count - 1].X,
@@ -214,7 +226,7 @@ namespace Graph4
                     case 1:
                         realPoints[realPoints.Count - 2] = realPoints[realPoints.Count - 1];
                         realPoints[realPoints.Count - 1] = point;
-                        points.Add(point);
+                        //points.Add(point);
                         MyMatrix temp1 = new MyMatrix(2, 4, new List<float>()
                         { realPoints[realPoints.Count - 4].X, realPoints[realPoints.Count - 3].X, realPoints[realPoints.Count - 2].X, realPoints[realPoints.Count - 1].X,
                          realPoints[realPoints.Count - 4].Y, realPoints[realPoints.Count - 3].Y, realPoints[realPoints.Count - 2].Y, realPoints[realPoints.Count - 1].Y,});
@@ -225,14 +237,139 @@ namespace Graph4
             }
         }
 
+
+        public int FindPoint(PointF point)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (Math.Sqrt(Math.Pow(Math.Abs(points[i].X - point.X), 2) + Math.Pow(Math.Abs(points[i].Y - point.Y), 2)) < _searchDistance)
+                { return i; }
+            }
+
+            return -1;
+        }
+
+
         private void Canvas_Click(object sender, EventArgs e)
         {
+            MouseEventArgs mouseEventArgs = (MouseEventArgs)e;
+            PointF p = new PointF(mouseEventArgs.X, mouseEventArgs.Y);
             if (state == State.Task3Drawing)
             {
-                MouseEventArgs mouseEventArgs = (MouseEventArgs)e;
-                PointF p = new PointF(mouseEventArgs.X, mouseEventArgs.Y);
+
                 AddDot(p);
             }
+            if (state == State.Task3Delete)
+            {
+                int pos = FindPoint(p);
+                if (pos != -1)
+                {
+                    points.RemoveAt(pos);
+                    g.Clear(Color.White);
+                    RecalculateAllMatrix();
+                    DrawPoints();
+
+                }
+            }
+        }
+
+        private void RecalculateAllMatrix()
+        {
+            realPoints.Clear();
+            matrixs.Clear();
+
+            if (points.Count == 0)
+                return;
+            if (points.Count == 1)
+            {
+                realPoints.Add(points[0]);
+                realPoints.Add(points[0]);
+                realPoints.Add(points[0]);
+                realPoints.Add(points[0]);
+                NotFinishedDots = 3;
+            }
+            else if (points.Count == 2)
+            {
+                realPoints.Add(points[0]);
+                realPoints.Add(points[0]);
+                realPoints.Add(points[1]);
+                realPoints.Add(points[1]);
+                NotFinishedDots = 2;
+            }
+            else if (points.Count == 3)
+            {
+                realPoints.Add(points[0]);
+                realPoints.Add(points[1]);
+                realPoints.Add(new PointF((points[1].X + points[2].X) / 2, (points[1].Y + points[2].Y) / 2));
+                realPoints.Add(points[2]);
+                NotFinishedDots = 1;
+            }
+            else if (points.Count == 4)
+            {
+                realPoints.Add(points[0]);
+                realPoints.Add(points[1]);
+                realPoints.Add(points[2]);
+                realPoints.Add(points[3]);
+                NotFinishedDots = 0;
+            }
+            else
+            {
+                realPoints.Add(points[0]);
+                realPoints.Add(points[1]);
+                realPoints.Add(points[2]);
+                realPoints.Add(new PointF((points[2].X + points[3].X) / 2, (points[2].Y + points[3].Y) / 2));
+                int i;
+                for (i = 3; i < points.Count - 4; i += 2)
+                {
+                    realPoints.Add(points[i]);
+                    realPoints.Add(points[i + 1]);
+                    realPoints.Add(new PointF((points[i + 1].X + points[i + 2].X) / 2, (points[i + 1].Y + points[i + 2].Y) / 2));
+
+                }
+
+                if (i != points.Count - 1)
+                {
+                    switch (points.Count - i)
+                    {
+                        case 2:
+                            realPoints.Add(points[i]);
+                            realPoints.Add(new PointF((points[i].X + points[i + 1].X) / 2, (points[i].Y + points[i + 1].Y) / 2));
+                            realPoints.Add(points[i + 1]);
+                            NotFinishedDots = 1;
+                            break;
+                        case 3:
+
+                            realPoints.Add(points[i]);
+                            realPoints.Add(points[i + 1]);
+                            realPoints.Add(points[i + 2]);
+                            NotFinishedDots = 0;
+                            break;
+                        case 4:
+                            realPoints.Add(points[i]);
+                            realPoints.Add(points[i + 1]);
+                            realPoints.Add(new PointF((points[i + 1].X + points[i + 2].X) / 2, (points[i + 1].Y + points[i + 2].Y) / 2));
+
+                            realPoints.Add(points[i + 2]);
+                            realPoints.Add(new PointF((points[i + 2].X + points[i + 3].X) / 2, (points[i + 2].Y + points[i + 3].Y) / 2));
+
+                            realPoints.Add(points[i + 3]);
+                            NotFinishedDots = 1;
+                            break;
+
+                    }
+                }
+            }
+            int j = 0;
+            for (j = 0; j < realPoints.Count - 4; j += 3)
+            {
+                MyMatrix temp = new MyMatrix(2, 4, new List<float>() { realPoints[j].X, realPoints[j+1].X, realPoints[j+2].X, realPoints[j+3].X,
+                realPoints[j].Y, realPoints[j+1].Y, realPoints[j+2].Y, realPoints[j+3].Y,});
+                matrixs.Add(temp * BezBukviKoef);
+            }
+            MyMatrix temp1 = new MyMatrix(2, 4, new List<float>() { realPoints[j].X, realPoints[j+1].X, realPoints[j+2].X, realPoints[j+3].X,
+                realPoints[j].Y, realPoints[j+1].Y, realPoints[j+2].Y, realPoints[j+3].Y,});
+            matrixs.Add(temp1 * BezBukviKoef);
+
         }
 
         private void DrawCurve()
@@ -257,14 +394,30 @@ namespace Graph4
             }
         }
 
+        private void DrawPoints()
+        {
+            foreach (var p in points)
+            {
+                g.DrawRectangle(_penRed, p.X, p.Y, 1, 1);
+            }
+        }
+
         private void button4_Click(object sender, EventArgs e)
         {
             state = State.Task3Line;
             DrawCurve();
+            DrawPoints();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            state = State.Task3Delete;
+            g.Clear(Color.White);
+            DrawPoints();
         }
     }
 
-    enum State { NoTask, Task1, Task2, Task3Drawing, Task3Line }
+    enum State { NoTask, Task1, Task2, Task3Drawing, Task3Line, Task3Delete }
 
     class MyMatrix
     {
