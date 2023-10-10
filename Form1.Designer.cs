@@ -56,6 +56,7 @@
             button1.TabIndex = 1;
             button1.Text = "Задание 1";
             button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // button2
             // 
@@ -101,7 +102,7 @@
             Controls.Add(Canvas);
             Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
-            Text = "Графика. Лабораторная 4";
+            Text = "Графика. Лабораторная 5";
             ((System.ComponentModel.ISupportInitialize)Canvas).EndInit();
             ResumeLayout(false);
         }
