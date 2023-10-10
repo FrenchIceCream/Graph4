@@ -14,8 +14,10 @@ namespace Graph4
         private Pen pen_tree;
         private MyMatrix BezBukviKoef;
         private Graphics g; /*{ get { return Validate(); }; set { } }*/
+        private int NotFinishedDots = 0;
 
         private List<PointF> points = new List<PointF>();
+        private List<PointF> realPoints = new List<PointF>();
         private List<MyMatrix> matrixs = new List<MyMatrix>();
         private State state;
         private Pen _pen;
@@ -139,15 +141,22 @@ namespace Graph4
         private void button3_Click(object sender, EventArgs e)
         {
             g.Clear(Color.White);
+            foreach (var p in points)
+            {
+                g.DrawRectangle(_penRed, p.X, p.Y, 1, 1);
+            }
             state = State.Task3Drawing;
         }
 
         private void AddDot(PointF point)
         {
             points.Add(point);
-            if (points.Count <= 3)
+            g.DrawRectangle(_penRed, point.X, point.Y, 1, 1);
+
+            if (points.Count <= 4)
             {
-                if (matrixs.Count < 0)
+                realPoints.Add(point);
+                if (matrixs.Count == 0)
                 {
                     matrixs.Add(new MyMatrix(2, 4));
                 }
@@ -157,20 +166,63 @@ namespace Graph4
                     case 1:
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[0].X, points[0].X, points[0].X,
                             points[0].Y, points[0].Y, points[0].Y, points[0].Y });
+                        NotFinishedDots = 3;
                         break;
                     case 2:
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[0].X, points[1].X, points[1].X,
                             points[0].Y, points[0].Y, points[1].Y, points[1].Y });
+                        NotFinishedDots = 2;
                         break;
-                    default:
+                    case 3:
                         P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, points[1].X+(points[2].X -points[1].X)/2, points[2].X,
                             points[0].Y, points[1].Y, points[1].Y+(points[2].Y -points[1].Y)/2, points[2].Y });
+                        NotFinishedDots = 1;
+                        break;
+                    default:
+                        P = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, points[2].X, points[3].X,
+                            points[0].Y, points[1].Y, points[2].Y, points[3].Y });
+                        NotFinishedDots = 0;
                         break;
                 }
                 matrixs[0] = P * BezBukviKoef;
 
             }
-            g.DrawRectangle(_penRed, point.X, point.Y, 1, 1);
+            else
+            {
+                switch (NotFinishedDots)
+                {
+                    case 0:
+                        realPoints.Add(realPoints[realPoints.Count - 1]); // добавление последней точки
+                        realPoints[realPoints.Count - 2] = new PointF((realPoints[realPoints.Count - 3].X + realPoints[realPoints.Count - 1].X) / 2,
+                            (realPoints[realPoints.Count - 3].Y + realPoints[realPoints.Count - 1].Y) / 2);//интерполяция для создания предпоследней
+                        MyMatrix P = new MyMatrix(2, 4, new List<float>()
+                        { realPoints[realPoints.Count - 5].X, realPoints[realPoints.Count - 4].X, realPoints[realPoints.Count - 3].X, realPoints[realPoints.Count - 2].X,
+                        realPoints[realPoints.Count - 5].Y, realPoints[realPoints.Count - 4].Y, realPoints[realPoints.Count - 3].Y, realPoints[realPoints.Count - 2].Y});
+                        matrixs[matrixs.Count - 1] = P * BezBukviKoef;// перерасчет новой матрицы с учетом интерполированной
+
+                        //добавляем еще одну фейковую точку
+                        realPoints.Add(new PointF((realPoints[realPoints.Count - 2].X + realPoints[realPoints.Count - 1].X) / 2, (realPoints[realPoints.Count - 2].Y + realPoints[realPoints.Count - 1].Y) / 2));
+                        realPoints.Add(point); // добавили новую матрицу и точки для нее
+                        points.Add(point);
+
+                        MyMatrix temp = new MyMatrix(2, 4, new List<float>()
+                        { realPoints[realPoints.Count - 4].X, realPoints[realPoints.Count - 3].X, realPoints[realPoints.Count - 2].X, realPoints[realPoints.Count - 1].X,
+                         realPoints[realPoints.Count - 4].Y, realPoints[realPoints.Count - 3].Y, realPoints[realPoints.Count - 2].Y, realPoints[realPoints.Count - 1].Y,});
+                        matrixs.Add(temp * BezBukviKoef);
+                        NotFinishedDots = 1;
+                        break;
+                    case 1:
+                        realPoints[realPoints.Count - 2] = realPoints[realPoints.Count - 1];
+                        realPoints[realPoints.Count - 1] = point;
+                        points.Add(point);
+                        MyMatrix temp1 = new MyMatrix(2, 4, new List<float>()
+                        { realPoints[realPoints.Count - 4].X, realPoints[realPoints.Count - 3].X, realPoints[realPoints.Count - 2].X, realPoints[realPoints.Count - 1].X,
+                         realPoints[realPoints.Count - 4].Y, realPoints[realPoints.Count - 3].Y, realPoints[realPoints.Count - 2].Y, realPoints[realPoints.Count - 1].Y,});
+                        matrixs[matrixs.Count - 1] = (temp1 * BezBukviKoef);
+                        NotFinishedDots = 0;
+                        break;
+                }
+            }
         }
 
         private void Canvas_Click(object sender, EventArgs e)
@@ -185,16 +237,12 @@ namespace Graph4
 
         private void DrawCurve()
         {
-            if (points.Count < 4)
-            {
-                return;
-            }
-            for (int i = 0; i < points.Count / 4; i++)
-            {
-                MyMatrix m = new MyMatrix(2, 4, new List<float>() { points[0].X, points[1].X, points[2].X, points[3].X,
-                points[0].Y, points[1].Y, points[2].Y, points[3].Y});
-                MyMatrix temp = m * BezBukviKoef;
+            g.Clear(Color.White);
 
+            if (matrixs.Count == 0) { return; }
+
+            foreach (var itMatr in matrixs)
+            {
                 float singleT = 0;
                 for (int k = 0; k < 500; k++)
                 {
@@ -202,7 +250,7 @@ namespace Graph4
                     (float)Math.Pow(singleT,1),
                     (float)Math.Pow(singleT,2),
                     (float)Math.Pow(singleT,3)});
-                    MyMatrix tempRes = temp * t;
+                    MyMatrix tempRes = itMatr * t;
                     g.DrawRectangle(_pen, tempRes[0, 0], tempRes[1, 0], 1, 1);
                     singleT += 1 / 500f;
                 }
