@@ -32,6 +32,7 @@
             button1 = new Button();
             button2 = new Button();
             button3 = new Button();
+            button4 = new Button();
             ((System.ComponentModel.ISupportInitialize)Canvas).BeginInit();
             SuspendLayout();
             // 
@@ -39,47 +40,66 @@
             // 
             Canvas.BackColor = SystemColors.Window;
             Canvas.Location = new Point(0, 0);
+            Canvas.Margin = new Padding(3, 2, 3, 2);
             Canvas.Name = "Canvas";
-            Canvas.Size = new Size(795, 535);
+            Canvas.Size = new Size(696, 401);
             Canvas.TabIndex = 0;
             Canvas.TabStop = false;
+            Canvas.Click += Canvas_Click;
             // 
             // button1
             // 
-            button1.Location = new Point(820, 24);
+            button1.Location = new Point(718, 18);
+            button1.Margin = new Padding(3, 2, 3, 2);
             button1.Name = "button1";
-            button1.Size = new Size(127, 39);
+            button1.Size = new Size(111, 29);
             button1.TabIndex = 1;
             button1.Text = "Задание 1";
             button1.UseVisualStyleBackColor = true;
             // 
             // button2
             // 
-            button2.Location = new Point(820, 82);
+            button2.Location = new Point(718, 62);
+            button2.Margin = new Padding(3, 2, 3, 2);
             button2.Name = "button2";
-            button2.Size = new Size(127, 39);
+            button2.Size = new Size(111, 29);
             button2.TabIndex = 2;
             button2.Text = "Задание 2";
             button2.UseVisualStyleBackColor = true;
             // 
             // button3
             // 
-            button3.Location = new Point(820, 141);
+            button3.Location = new Point(718, 106);
+            button3.Margin = new Padding(3, 2, 3, 2);
             button3.Name = "button3";
-            button3.Size = new Size(127, 39);
+            button3.Size = new Size(111, 29);
             button3.TabIndex = 3;
             button3.Text = "Задание 3";
             button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
+            // 
+            // button4
+            // 
+            button4.Location = new Point(718, 150);
+            button4.Margin = new Padding(3, 2, 3, 2);
+            button4.Name = "button4";
+            button4.Size = new Size(111, 29);
+            button4.TabIndex = 4;
+            button4.Text = "Рисовать";
+            button4.UseVisualStyleBackColor = true;
+            button4.Click += button4_Click;
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(969, 534);
+            ClientSize = new Size(848, 400);
+            Controls.Add(button4);
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(Canvas);
+            Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
             Text = "Графика. Лабораторная 4";
             ((System.ComponentModel.ISupportInitialize)Canvas).EndInit();
@@ -92,5 +112,6 @@
         private Button button1;
         private Button button2;
         private Button button3;
+        private Button button4;
     }
 }
