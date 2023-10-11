@@ -30,15 +30,16 @@ namespace Graph4
 
             _pen = new Pen(Color.Black, 1);
             _penRed = new Pen(Color.Red, 1);
+            pen_tree = new Pen(Color.RosyBrown,2);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            float length = 50;
+            float length = 8;
             Dictionary<char, string> rules = new Dictionary<char, string>();
 
 
-            string[] lines = File.ReadAllLines("rules.txt");
+            string[] lines = File.ReadAllLines("../../../rules.txt");
             string[] lines2 = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
             char atom = char.Parse(lines2[0]);
             float deg = float.Parse(lines2[1]);
@@ -50,10 +51,14 @@ namespace Graph4
             }
             string res_string = TranslateRules(rules, axiom);
 
+            //Debug.WriteLine(res_string);
+            
             Stack<Tuple<int, int, float>> states = new Stack<Tuple<int, int, float>> { };
             List<Tuple<Point, int>> points = new List<Tuple<Point, int>> { };
 
-            CalcLSystem(res_string, deg, length, 0, 0, states, ref points);
+            CalcLSystem(res_string, deg, length, 400, 530, states, ref points, true);
+
+            //var p = ScaleToFit(points);
 
             DrawLSystem(points);
         }
@@ -94,7 +99,7 @@ namespace Graph4
             int branch_depth = 0;
             points.Add(new Tuple<Point, int>(new Point(cur_x, cur_y), 0));
             Random r = new Random();
-            float cur_deg = 0;
+            float cur_deg = 90;
             for (int i = 0; i < res_string.Length; i++)
             {
                 char cur = res_string[i];
@@ -109,18 +114,19 @@ namespace Graph4
                 else if (cur == '(')
                 {
                     states.Push(new Tuple<int, int, float>(cur_x, cur_y, cur_deg));
-                    length /= 2;
+                    //length /= 2;
                     branch_depth++;
                 }
                 else if (cur == ')')
                 {
                     var st = states.Peek();
-                    length *= 2;
-                    branch_depth--;
                     states.Pop();
+                    //length *= 2;
+                    branch_depth--;
                     cur_x = st.Item1;
                     cur_y = st.Item2;
                     cur_deg = st.Item3;
+                    points.Add(new Tuple<Point, int>(new Point(cur_x, cur_y), branch_depth));
                 }
                 else
                 {
@@ -131,9 +137,85 @@ namespace Graph4
             }
         }
 
+        List<Tuple<Point, int>> ScaleToFit(List<Tuple<Point, int>> points)
+        {
+            List<Tuple<Point, int>> points_new = new List<Tuple<Point, int>> { };
+            var max_x = points.Max(x => x.Item1.X);
+            var min_x = points.Min(x => x.Item1.X);
+            var dist_x = max_x - min_x;
+            var max_y = points.Max(x => x.Item1.Y);
+            var min_y = points.Min(x => x.Item1.Y);
+            var dist_y = max_y - min_y;
+
+            if (dist_x > Canvas.Width || dist_y > Canvas.Height)
+            {
+                ;
+                /*
+                float[,] move_matrix = new float[3, 3] { { 1, 0, 0 }, { 0, 1, 0 }, { dist_x, dist_y, 1 } };
+                float temp = 0;
+                float[,] m = new float[3, 1];
+
+                //РїРµСЂРµРјРЅРѕР¶Р°РµРј СЃ РјР°С‚СЂРёС†РµР№
+                for (int p = 0; p < points.Count; p++)
+                {
+                    for (int i = 0; i < 1; i++)
+                    {
+                        for (int j = 0; j < 3; j++)
+                        {
+                            temp = 0;
+                            for (int k = 0; k < 3; k++)
+                            {
+                                temp += points.ElementAt(p).Item1[i, k] * move_matrix[k, j];
+                            }
+                            m[j, 0] = temp;
+                        }
+                    }
+                    dot_list_new.Add(new Point((int)m[0, 0], (int)m[1, 0]));
+                }*/
+            }
+            else
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    var p = points.ElementAt(i).Item1;
+                    points_new.Add(new Tuple<Point, int>(new Point(p.X + Canvas.Width / 2, p.Y + Canvas.Height / 2 + dist_y/2), points.ElementAt(i).Item2));
+                }
+            }
+            return points_new;
+        }
+
         private void DrawLSystem(List<Tuple<Point, int>> points)
         {
+            g.Clear(Color.White);
+            var c1 = Color.RosyBrown;
+            var c2 = Color.Green;
+            var max_d = points.Max(x => x.Item2);
+            Debug.WriteLine(max_d);
 
+            var a = points[0];
+            for (int i = 1; i < points.Count; i++)
+            {
+                var cur = points[i];
+                if (cur.Item2 >= a.Item2)
+                {
+                    if (cur.Item2 > a.Item2)
+                    {
+                        float coef= (max_d - cur.Item2) / (float)(max_d);
+                        var c = Color.FromArgb(255, (int)(c1.R * (1f - coef) + c2.R * coef), (int)(c1.G * (1f - coef) + c2.G * coef), (int)(c1.B * (1f - coef) + c2.B * coef));
+                        pen_tree.Color = c;
+                        pen_tree.Width /= 2;
+                    }
+                    g.DrawLine(pen_tree, a.Item1, cur.Item1);
+                }
+                else
+                {
+                    float coef = (cur.Item2) / (float)(max_d);
+                    var c = Color.FromArgb(255, (int)(c1.R * (1f - coef) + c2.R * coef), (int)(c1.G * (1f - coef) + c2.G * coef), (int)(c1.B * (1f - coef) + c2.B * coef));
+                    pen_tree.Color = c;
+                    pen_tree.Width *= 2;
+                }
+                a = cur;
+            }
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -255,7 +337,7 @@ namespace Graph4
         public static MyMatrix operator *(MyMatrix lhs, MyMatrix rhs)
         {
             if (lhs.n != rhs.m)
-                throw new Exception("Неправильное перемножение матриц");
+                throw new Exception("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ");
 
             MyMatrix res = new MyMatrix(lhs.m, rhs.n);
             for (int i = 0; i < lhs.m; i++)

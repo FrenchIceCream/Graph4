@@ -1,0 +1,22 @@
+F 60 F++F++F
+F->F-F++F-F
+
+
+F 90 F+F+F+F
+F->F+F-F-FF+F+F-F
+
+F 60 FXF--FF--FF
+F->FF
+X->--FXF++FXF++FXF--
+
+F 45 X
+F->FF
+X->F(+X)F(-X)+X
+
+F 22 F
+F->FF-(-F+F+F)+(+F-F-F)
+
+F 60 YF
+F->F
+X->YF+XF+Y
+Y->XF-YF-X
