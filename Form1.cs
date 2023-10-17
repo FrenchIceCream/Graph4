@@ -10,7 +10,7 @@ namespace Graph4
 {
     public partial class Form1 : Form
     {
-        private const int max_depth = 5;
+        private const int max_depth = 3;
         private Pen pen_tree;
         private MyMatrix BezBukviKoef;
         private Graphics g; /*{ get { return Validate(); }; set { } }*/
@@ -35,15 +35,16 @@ namespace Graph4
 
             _pen = new Pen(Color.Black, 1);
             _penRed = new Pen(Color.Red, 1);
-            pen_tree = new Pen(Color.RosyBrown,2);
+            pen_tree = new Pen(Color.RosyBrown, 2);
             _penGreen = new Pen(Color.Green, 2);
+            slider.Maximum = 30;
+            slider.Minimum = 1;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            float length = 8;
+            float length = slider.Value * 2;
             Dictionary<char, string> rules = new Dictionary<char, string>();
-
 
             string[] lines = File.ReadAllLines("../../../rules.txt");
             string[] lines2 = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -55,21 +56,19 @@ namespace Graph4
                 var temp = lines[i].Split("->");
                 rules[char.Parse(temp[0])] = temp[1];
             }
-            string res_string = TranslateRules(rules, axiom);
+            string res_string = TranslateRules(rules, axiom, ref length);
 
-            //Debug.WriteLine(res_string);
-            
-            Stack<Tuple<int, int, float>> states = new Stack<Tuple<int, int, float>> { };
+            Debug.WriteLine(res_string);
+
+            Stack<Tuple<int, int, float, int>> states = new Stack<Tuple<int, int, float, int>> { };
             List<Tuple<Point, int>> points = new List<Tuple<Point, int>> { };
 
-            CalcLSystem(res_string, deg, length, 400, 530, states, ref points, true);
-
-            //var p = ScaleToFit(points);
+            CalcLSystem(res_string, deg, length, Canvas.Width / 2, Canvas.Height - 100, states, ref points, is_random.Checked);
 
             DrawLSystem(points);
         }
 
-        private string TranslateRules(Dictionary<char, string> rules, string axiom)
+        private string TranslateRules(Dictionary<char, string> rules, string axiom, ref float length)
         {
             string res = axiom;
             for (int j = 0; j < max_depth; j++)
@@ -93,19 +92,22 @@ namespace Graph4
                             temp += "(";
                         else if (cur == ')')
                             temp += ")";
+                        else
+                            temp += cur;
                     }
                 }
                 res = temp;
             }
+
             return res;
         }
 
-        private void CalcLSystem(string res_string, float deg, float length, int cur_x, int cur_y, Stack<Tuple<int, int, float>> states, ref List<Tuple<Point, int>> points, bool rnd = false)
+        private void CalcLSystem(string res_string, float deg, float length, int cur_x, int cur_y, Stack<Tuple<int, int, float, int>> states, ref List<Tuple<Point, int>> points, bool rnd = false)
         {
-            int branch_depth = 0;
+            int branch_depth = 1;
             points.Add(new Tuple<Point, int>(new Point(cur_x, cur_y), 0));
             Random r = new Random();
-            float cur_deg = 90;
+            float cur_deg = rnd ? 90 : 0;
             for (int i = 0; i < res_string.Length; i++)
             {
                 char cur = res_string[i];
@@ -119,19 +121,17 @@ namespace Graph4
                 }
                 else if (cur == '(')
                 {
-                    states.Push(new Tuple<int, int, float>(cur_x, cur_y, cur_deg));
-                    //length /= 2;
                     branch_depth++;
+                    states.Push(new Tuple<int, int, float, int>(cur_x, cur_y, cur_deg, branch_depth));
                 }
                 else if (cur == ')')
                 {
                     var st = states.Peek();
                     states.Pop();
-                    //length *= 2;
-                    branch_depth--;
                     cur_x = st.Item1;
                     cur_y = st.Item2;
                     cur_deg = st.Item3;
+                    branch_depth = st.Item4;
                     points.Add(new Tuple<Point, int>(new Point(cur_x, cur_y), branch_depth));
                 }
                 else
@@ -143,83 +143,38 @@ namespace Graph4
             }
         }
 
-        List<Tuple<Point, int>> ScaleToFit(List<Tuple<Point, int>> points)
-        {
-            List<Tuple<Point, int>> points_new = new List<Tuple<Point, int>> { };
-            var max_x = points.Max(x => x.Item1.X);
-            var min_x = points.Min(x => x.Item1.X);
-            var dist_x = max_x - min_x;
-            var max_y = points.Max(x => x.Item1.Y);
-            var min_y = points.Min(x => x.Item1.Y);
-            var dist_y = max_y - min_y;
-
-            if (dist_x > Canvas.Width || dist_y > Canvas.Height)
-            {
-                ;
-                /*
-                float[,] move_matrix = new float[3, 3] { { 1, 0, 0 }, { 0, 1, 0 }, { dist_x, dist_y, 1 } };
-                float temp = 0;
-                float[,] m = new float[3, 1];
-
-                //перемножаем с матрицей
-                for (int p = 0; p < points.Count; p++)
-                {
-                    for (int i = 0; i < 1; i++)
-                    {
-                        for (int j = 0; j < 3; j++)
-                        {
-                            temp = 0;
-                            for (int k = 0; k < 3; k++)
-                            {
-                                temp += points.ElementAt(p).Item1[i, k] * move_matrix[k, j];
-                            }
-                            m[j, 0] = temp;
-                        }
-                    }
-                    dot_list_new.Add(new Point((int)m[0, 0], (int)m[1, 0]));
-                }*/
-            }
-            else
-            {
-                for (int i = 0; i < points.Count; i++)
-                {
-                    var p = points.ElementAt(i).Item1;
-                    points_new.Add(new Tuple<Point, int>(new Point(p.X + Canvas.Width / 2, p.Y + Canvas.Height / 2 + dist_y/2), points.ElementAt(i).Item2));
-                }
-            }
-            return points_new;
-        }
-
         private void DrawLSystem(List<Tuple<Point, int>> points)
         {
             g.Clear(Color.White);
-            var c1 = Color.RosyBrown;
-            var c2 = Color.Green;
+            var c1 = Color.FromArgb(1, 23, 102, 20);
+            var c2 = Color.FromArgb(1, 120, 80, 54);
             var max_d = points.Max(x => x.Item2);
+            if (max_d == 1)
+            {
+                pen_tree.Width = 1;
+                c1 = c2 = Color.Black;
+            }
+            else
+                pen_tree.Width = max_depth * 2 - 2;
             Debug.WriteLine(max_d);
 
             var a = points[0];
             for (int i = 1; i < points.Count; i++)
             {
                 var cur = points[i];
+
+                float coef = (float)(max_d - cur.Item2) / (float)(max_d);
+                var c = Color.FromArgb(255, (int)(c1.R * (1f - coef) + c2.R * coef), (int)(c1.G * (1f - coef) + c2.G * coef), (int)(c1.B * (1f - coef) + c2.B * coef));
+                pen_tree.Color = c;
+
                 if (cur.Item2 >= a.Item2)
                 {
                     if (cur.Item2 > a.Item2)
-                    {
-                        float coef= (max_d - cur.Item2) / (float)(max_d);
-                        var c = Color.FromArgb(255, (int)(c1.R * (1f - coef) + c2.R * coef), (int)(c1.G * (1f - coef) + c2.G * coef), (int)(c1.B * (1f - coef) + c2.B * coef));
-                        pen_tree.Color = c;
-                        pen_tree.Width /= 2;
-                    }
+                        pen_tree.Width = pen_tree.Width - (cur.Item2 - a.Item2);
                     g.DrawLine(pen_tree, a.Item1, cur.Item1);
                 }
                 else
-                {
-                    float coef = (cur.Item2) / (float)(max_d);
-                    var c = Color.FromArgb(255, (int)(c1.R * (1f - coef) + c2.R * coef), (int)(c1.G * (1f - coef) + c2.G * coef), (int)(c1.B * (1f - coef) + c2.B * coef));
-                    pen_tree.Color = c;
-                    pen_tree.Width *= 2;
-                }
+                    pen_tree.Width = pen_tree.Width + (a.Item2 - cur.Item2);
                 a = cur;
             }
         }
